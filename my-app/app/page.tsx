@@ -1,46 +1,50 @@
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react'
 
-export default async function Home() {
-  const supabase = createClient()
-  
-  // ✅ کوئری تست - فقط ۱ رکورد رو از جدول users می‌خونه
-  // اگه جدول خالی باشه، خطا نمیده، فقط data = [] برمی‌گردونه
-  const { data, error } = await supabase
-    .from('users')   // ← این جدول حتماً وجود داره (توسط Supabase ساخته شده)
-    .select('id')
-    .limit(1)
+async function QuestionsList() {
+  const res = await fetch('http://localhost:3000/api/questions', {
+    cache: 'no-store',
+  })
+  const result = await res.json()
 
-  // مدیریت خطا
-  if (error) {
+  if (!result.success) {
     return (
-      <div className='p-4 bg-red-50 border border-red-200 rounded'>
-        <h2 className='text-red-700 font-bold'>❌ خطا در اتصال به Supabase</h2>
-        <p className='text-red-600'>{error.message}</p>
-        <details className='mt-2'>
-          <summary className='cursor-pointer text-sm text-gray-600'>مشاهده جزئیات</summary>
-          <pre className='mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto'>
-            {JSON.stringify(error, null, 2)}
-          </pre>
-        </details>
+      <div className="p-4 bg-red-50 border border-red-200 rounded">
+        <h2 className="text-red-700 font-bold">❌ خطا در دریافت سوالات</h2>
+        <p className="text-red-600">{result.message}</p>
       </div>
     )
   }
 
-  // اگر به اینجا رسیدیم، یعنی اتصال برقراره (حتی اگه جدول خالی باشه)
-  return (
-    <div className='p-4'>
-      <div className='bg-green-50 border border-green-200 rounded p-4 mb-4'>
-        <h2 className='text-green-700 font-bold'>✅ اتصال به Supabase موفقیت‌آمیز بود!</h2>
-        <p className='text-green-600'>
-          تعداد رکوردهای موجود در جدول users: {data?.length || 0}
-        </p>
-        <p className='text-sm text-gray-500 mt-2'>
-          (اگه صفر باشه، یعنی جدول خالی‌ست و این طبیعی‌ست برای شروع)
-        </p>
+  const questions = result.data || []
+
+  if (questions.length === 0) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
+        <p className="text-yellow-700">⚠️ هنوز سوالی در دیتابیس وجود ندارد.</p>
+        <p className="text-sm text-gray-500 mt-2">برای اضافه کردن سوال، از پنل ادمین استفاده کن.</p>
       </div>
-      <pre className='bg-gray-100 p-4 rounded overflow-auto'>
-        {JSON.stringify(data, null, 2)}
-      </pre>
+    )
+  }
+
+  return (
+    <ul className="space-y-2">
+      {questions.map((q: any) => (
+        <li key={q.id} className="p-3 bg-gray-50 rounded border">
+          <p className="font-medium">{q.title || q.slug || `سوال شماره ${q.id}`}</p>
+          <p className="text-sm text-gray-500">سختی: {q.difficulty || 'نامشخص'}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export default function Home() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">📚 لیست سوالات</h1>
+      <Suspense fallback={<div className="text-gray-500">⏳ در حال بارگذاری سوالات...</div>}>
+        <QuestionsList />
+      </Suspense>
     </div>
   )
 }
