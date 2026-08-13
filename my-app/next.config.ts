@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  
   reactCompiler: true,
   cacheComponents: true,
   reactStrictMode: true,
@@ -32,7 +30,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3001/api/:path*",
+        destination: "http://localhost:3001/:path*",
       },
     ];
   },
